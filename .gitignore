@@ -1,17 +1,12 @@
 /vendor/
-/node_modules/
+/storage/logs/
+/storage/reports/
+/storage/keys/
 
 .env
-
-Thumbs.db
-Desktop.ini
-
-.vscode/settings.json
-
-.idea/
+config.local.php
 
 *.log
-
 .DS_Store
 
 composer.lock
@@ -20,6 +15,10 @@ package-lock.json
 /public/uploads/
 /uploads/
 
+# Ignorar todos los SQL
 database/*.sql
+
+# Excepto el script oficial del proyecto
+!database/rokola_ritmopty.sql
 
 *.zip
