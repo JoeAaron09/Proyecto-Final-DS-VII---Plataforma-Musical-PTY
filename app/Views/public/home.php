@@ -13,10 +13,21 @@ $escape = static function (mixed $value): string {
     );
 };
 
-$baseUrl = rtrim($config['base_url'], '/');
+$baseUrl = rtrim(
+    $config['base_url'],
+    '/'
+);
+
+$artists = $artists ?? [];
+$songs = $songs ?? [];
+$top = $top ?? [];
+$artist = $artist ?? null;
+$events = $events ?? [];
+$venues = $venues ?? [];
+$plans = $plans ?? [];
 ?>
 
-<!-- HERO PRINCIPAL -->
+<!-- HERO -->
 <section class="home-hero">
     <div class="container home-hero-grid">
 
@@ -31,12 +42,12 @@ $baseUrl = rtrim($config['base_url'], '/');
             </h1>
 
             <p>
-                Descubre artistas, bandas, canciones, locales y eventos
+                Descubre artistas, canciones, locales y eventos
                 de la escena musical panameña.
             </p>
 
-            <a class="btn" href="#canciones">
-                Explorar música
+            <a class="btn" href="#artistas">
+                Explorar la escena
             </a>
         </div>
 
@@ -53,18 +64,44 @@ $baseUrl = rtrim($config['base_url'], '/');
     <div class="container">
 
         <header class="section-heading">
-            <span>Talento nacional</span>
+            <span>Talento y proyectos nacionales</span>
             <h2>Artistas</h2>
         </header>
+
+        <?php if ($artists === []): ?>
+            <div class="public-empty-state">
+                <h3>No hay artistas registrados</h3>
+
+                <p>
+                    Los artistas activos aparecerán en esta sección.
+                </p>
+            </div>
+        <?php endif; ?>
 
         <div class="card-grid">
             <?php foreach ($artists as $artistItem): ?>
                 <?php
                 $artistImage = $artistItem['imagen_url']
-                    ?: 'https://placehold.co/600x400/1b1b1b/ffffff?text=Artista';
+                    ?: (
+                        'https://placehold.co/'
+                        . '600x400/1b1b1b/ffffff'
+                        . '?text=Artista'
+                    );
+
+                $artistType = $artistItem['tipo']
+                    ?? 'Artista';
+
+                $artistGenre = $artistItem['genero']
+                    ?? '';
+
+                $artistCountry = $artistItem['pais']
+                    ?? '';
+
+                $artistYear = $artistItem['anio_inicio']
+                    ?? '';
                 ?>
 
-                <article class="content-card">
+                <article class="content-card artist-card">
                     <img
                         src="<?= $escape($artistImage) ?>"
                         alt="<?= $escape($artistItem['nombre']) ?>"
@@ -72,76 +109,47 @@ $baseUrl = rtrim($config['base_url'], '/');
                     >
 
                     <div class="content-card-body">
-                        <h3><?= $escape($artistItem['nombre']) ?></h3>
-
-                        <?php if (!empty($artistItem['nacionalidad'])): ?>
-                            <p class="card-kicker">
-                                <?= $escape($artistItem['nacionalidad']) ?>
-                            </p>
-                        <?php endif; ?>
-
-                        <p>
-                            <?= $escape(
-                                mb_strimwidth(
-                                    (string)($artistItem['biografia'] ?? ''),
-                                    0,
-                                    150,
-                                    '...'
-                                )
-                            ) ?>
-                        </p>
-                    </div>
-                </article>
-            <?php endforeach; ?>
-        </div>
-
-    </div>
-</section>
-
-<!-- BANDAS -->
-<section id="bandas" class="public-section public-section-alt">
-    <div class="container">
-
-        <header class="section-heading">
-            <span>La escena nacional</span>
-            <h2>Bandas</h2>
-        </header>
-
-        <div class="card-grid">
-            <?php foreach ($bands as $band): ?>
-                <?php
-                $bandImage = $band['imagen_url']
-                    ?: 'https://placehold.co/600x400/1b1b1b/ffffff?text=Banda';
-                ?>
-
-                <article class="content-card">
-                    <img
-                        src="<?= $escape($bandImage) ?>"
-                        alt="<?= $escape($band['nombre']) ?>"
-                        loading="lazy"
-                    >
-
-                    <div class="content-card-body">
-                        <h3><?= $escape($band['nombre']) ?></h3>
+                        <h3>
+                            <?= $escape($artistItem['nombre']) ?>
+                        </h3>
 
                         <p class="card-kicker">
-                            <?= $escape($band['pais'] ?? '') ?>
+                            <?= $escape($artistType) ?>
 
-                            <?php if (!empty($band['anio_formacion'])): ?>
-                                · <?= $escape($band['anio_formacion']) ?>
+                            <?php if ($artistGenre !== ''): ?>
+                                · <?= $escape($artistGenre) ?>
                             <?php endif; ?>
                         </p>
 
-                        <p>
-                            <?= $escape(
-                                mb_strimwidth(
-                                    (string)($band['descripcion'] ?? ''),
-                                    0,
-                                    150,
-                                    '...'
-                                )
-                            ) ?>
-                        </p>
+                        <?php if (
+                            $artistCountry !== ''
+                            || $artistYear !== ''
+                        ): ?>
+                            <p class="artist-origin">
+                                <?= $escape($artistCountry) ?>
+
+                                <?php if ($artistYear !== ''): ?>
+                                    <?= $artistCountry !== ''
+                                        ? ' · '
+                                        : '' ?>
+
+                                    Desde <?= (int)$artistYear ?>
+                                <?php endif; ?>
+                            </p>
+                        <?php endif; ?>
+
+                        <?php if (!empty($artistItem['biografia'])): ?>
+                            <p>
+                                <?= $escape(
+                                    mb_strimwidth(
+                                        (string)$artistItem['biografia'],
+                                        0,
+                                        170,
+                                        '...'
+                                    )
+                                ) ?>
+                            </p>
+                        <?php endif; ?>
                     </div>
                 </article>
             <?php endforeach; ?>
@@ -151,7 +159,10 @@ $baseUrl = rtrim($config['base_url'], '/');
 </section>
 
 <!-- CANCIONES -->
-<section id="canciones" class="public-section">
+<section
+    id="canciones"
+    class="public-section public-section-alt"
+>
     <div class="container">
 
         <header class="section-heading">
@@ -159,11 +170,25 @@ $baseUrl = rtrim($config['base_url'], '/');
             <h2>Canciones</h2>
         </header>
 
+        <?php if ($songs === []): ?>
+            <div class="public-empty-state">
+                <h3>No hay canciones disponibles</h3>
+
+                <p>
+                    Las canciones activas aparecerán en esta sección.
+                </p>
+            </div>
+        <?php endif; ?>
+
         <div class="card-grid">
             <?php foreach ($songs as $song): ?>
                 <?php
                 $songImage = $song['imagen_url']
-                    ?: 'https://placehold.co/600x400/1b1b1b/ffffff?text=Cancion';
+                    ?: (
+                        'https://placehold.co/'
+                        . '600x400/1b1b1b/ffffff'
+                        . '?text=Cancion'
+                    );
                 ?>
 
                 <article class="content-card song-card">
@@ -174,7 +199,9 @@ $baseUrl = rtrim($config['base_url'], '/');
                     >
 
                     <div class="content-card-body">
-                        <h3><?= $escape($song['nombre']) ?></h3>
+                        <h3>
+                            <?= $escape($song['nombre']) ?>
+                        </h3>
 
                         <p class="card-kicker">
                             <?= $escape($song['artista'] ?? '') ?>
@@ -184,6 +211,17 @@ $baseUrl = rtrim($config['base_url'], '/');
                             <?php endif; ?>
                         </p>
 
+                        <?php if (!empty($song['album'])): ?>
+                            <p class="song-album">
+                                Álbum:
+                                <?= $escape($song['album']) ?>
+                            </p>
+                        <?php else: ?>
+                            <p class="song-album">
+                                Sencillo
+                            </p>
+                        <?php endif; ?>
+
                         <?php if (!empty($song['audio_url'])): ?>
                             <audio
                                 class="audio-player"
@@ -191,7 +229,8 @@ $baseUrl = rtrim($config['base_url'], '/');
                                 preload="none"
                                 src="<?= $escape($song['audio_url']) ?>"
                             >
-                                Tu navegador no admite reproducción de audio.
+                                Tu navegador no admite reproducción
+                                de audio.
                             </audio>
                         <?php endif; ?>
 
@@ -231,11 +270,11 @@ $baseUrl = rtrim($config['base_url'], '/');
 </section>
 
 <!-- TOP 10 -->
-<section class="public-section public-section-alt">
+<section class="public-section">
     <div class="container">
 
         <header class="section-heading">
-            <span>Últimos 30 días</span>
+            <span>Popularidad de los últimos 30 días</span>
             <h2>Top 10</h2>
         </header>
 
@@ -246,6 +285,18 @@ $baseUrl = rtrim($config['base_url'], '/');
                 <strong>
                     <?= $escape($artist['artista'] ?? '') ?>
                 </strong>
+
+                <?php if (!empty($artist['tipo'])): ?>
+                    <span>
+                        · <?= $escape($artist['tipo']) ?>
+                    </span>
+                <?php endif; ?>
+
+                <?php if (!empty($artist['genero'])): ?>
+                    <span>
+                        · <?= $escape($artist['genero']) ?>
+                    </span>
+                <?php endif; ?>
 
                 <small>
                     <?= (int)($artist['total'] ?? 0) ?>
@@ -266,10 +317,14 @@ $baseUrl = rtrim($config['base_url'], '/');
                 </thead>
 
                 <tbody>
-                    <?php if (empty($top)): ?>
+                    <?php if ($top === []): ?>
                         <tr>
-                            <td colspan="4" class="empty-table">
-                                Todavía no hay reproducciones registradas.
+                            <td
+                                colspan="4"
+                                class="empty-table"
+                            >
+                                Todavía no hay reproducciones
+                                registradas.
                             </td>
                         </tr>
                     <?php endif; ?>
@@ -277,9 +332,26 @@ $baseUrl = rtrim($config['base_url'], '/');
                     <?php foreach ($top as $index => $topItem): ?>
                         <tr>
                             <td><?= $index + 1 ?></td>
-                            <td><?= $escape($topItem['cancion'] ?? '') ?></td>
-                            <td><?= $escape($topItem['artista'] ?? '') ?></td>
-                            <td><?= (int)($topItem['reproducciones'] ?? 0) ?></td>
+
+                            <td>
+                                <?= $escape(
+                                    $topItem['cancion'] ?? ''
+                                ) ?>
+                            </td>
+
+                            <td>
+                                <?= $escape(
+                                    $topItem['artista'] ?? ''
+                                ) ?>
+                            </td>
+
+                            <td>
+                                <?= (int)(
+                                    $topItem['reproducciones']
+                                    ?? $topItem['total']
+                                    ?? 0
+                                ) ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -290,7 +362,10 @@ $baseUrl = rtrim($config['base_url'], '/');
 </section>
 
 <!-- EVENTOS -->
-<section id="eventos" class="public-section">
+<section
+    id="eventos"
+    class="public-section public-section-alt"
+>
     <div class="container">
 
         <header class="section-heading">
@@ -298,11 +373,25 @@ $baseUrl = rtrim($config['base_url'], '/');
             <h2>Eventos</h2>
         </header>
 
+        <?php if ($events === []): ?>
+            <div class="public-empty-state">
+                <h3>No hay próximos eventos</h3>
+
+                <p>
+                    Los eventos activos aparecerán aquí.
+                </p>
+            </div>
+        <?php endif; ?>
+
         <div class="card-grid">
             <?php foreach ($events as $event): ?>
                 <?php
                 $eventImage = $event['imagen_url']
-                    ?: 'https://placehold.co/600x400/1b1b1b/ffffff?text=Evento';
+                    ?: (
+                        'https://placehold.co/'
+                        . '600x400/1b1b1b/ffffff'
+                        . '?text=Evento'
+                    );
                 ?>
 
                 <article class="content-card">
@@ -313,24 +402,48 @@ $baseUrl = rtrim($config['base_url'], '/');
                     >
 
                     <div class="content-card-body">
-                        <h3><?= $escape($event['nombre']) ?></h3>
+                        <h3>
+                            <?= $escape($event['nombre']) ?>
+                        </h3>
 
                         <p class="card-kicker">
                             <?= $escape($event['fecha'] ?? '') ?>
 
                             <?php if (!empty($event['hora'])): ?>
-                                · <?= $escape(substr((string)$event['hora'], 0, 5)) ?>
+                                ·
+                                <?= $escape(
+                                    substr(
+                                        (string)$event['hora'],
+                                        0,
+                                        5
+                                    )
+                                ) ?>
                             <?php endif; ?>
                         </p>
 
                         <p>
                             <?= $escape(
-                                $event['local_nombre'] ?? 'Por confirmar'
+                                $event['local_nombre']
+                                ?? 'Por confirmar'
                             ) ?>
                         </p>
 
+                        <?php if (!empty($event['descripcion'])): ?>
+                            <p>
+                                <?= $escape(
+                                    mb_strimwidth(
+                                        (string)$event['descripcion'],
+                                        0,
+                                        130,
+                                        '...'
+                                    )
+                                ) ?>
+                            </p>
+                        <?php endif; ?>
+
                         <strong class="card-price">
-                            B/. <?= number_format(
+                            B/.
+                            <?= number_format(
                                 (float)($event['precio'] ?? 0),
                                 2
                             ) ?>
@@ -344,13 +457,23 @@ $baseUrl = rtrim($config['base_url'], '/');
 </section>
 
 <!-- LOCALES -->
-<section id="locales" class="public-section public-section-alt">
+<section id="locales" class="public-section">
     <div class="container">
 
         <header class="section-heading">
             <span>Espacios para la música</span>
             <h2>Locales</h2>
         </header>
+
+        <?php if ($venues === []): ?>
+            <div class="public-empty-state">
+                <h3>No hay locales registrados</h3>
+
+                <p>
+                    Los locales activos aparecerán aquí.
+                </p>
+            </div>
+        <?php endif; ?>
 
         <div class="card-grid">
             <?php foreach ($venues as $venue): ?>
@@ -369,7 +492,9 @@ $baseUrl = rtrim($config['base_url'], '/');
                     <?php endif; ?>
 
                     <div class="content-card-body">
-                        <h3><?= $escape($venue['nombre']) ?></h3>
+                        <h3>
+                            <?= $escape($venue['nombre']) ?>
+                        </h3>
 
                         <p class="card-kicker">
                             <?= $escape($venue['tipo'] ?? '') ?>
@@ -379,9 +504,19 @@ $baseUrl = rtrim($config['base_url'], '/');
                             <?php endif; ?>
                         </p>
 
-                        <p>
-                            <?= $escape($venue['direccion'] ?? '') ?>
-                        </p>
+                        <?php if (!empty($venue['direccion'])): ?>
+                            <p>
+                                <?= $escape($venue['direccion']) ?>
+                            </p>
+                        <?php endif; ?>
+
+                        <?php if (!empty($venue['capacidad'])): ?>
+                            <p class="venue-capacity">
+                                Capacidad:
+                                <?= (int)$venue['capacidad'] ?>
+                                personas
+                            </p>
+                        <?php endif; ?>
                     </div>
                 </article>
             <?php endforeach; ?>
@@ -399,6 +534,16 @@ $baseUrl = rtrim($config['base_url'], '/');
             <h2>Premium</h2>
         </header>
 
+        <?php if ($plans === []): ?>
+            <div class="public-empty-state">
+                <h3>No hay planes disponibles</h3>
+
+                <p>
+                    Los planes Premium activos aparecerán aquí.
+                </p>
+            </div>
+        <?php endif; ?>
+
         <div class="card-grid plans-grid">
             <?php foreach ($plans as $plan): ?>
                 <article class="content-card plan-card">
@@ -408,18 +553,31 @@ $baseUrl = rtrim($config['base_url'], '/');
                             Plan Rokola
                         </span>
 
-                        <h3><?= $escape($plan['nombre']) ?></h3>
+                        <h3>
+                            <?= $escape($plan['nombre']) ?>
+                        </h3>
 
                         <strong class="plan-price">
-                            B/. <?= number_format(
+                            B/.
+                            <?= number_format(
                                 (float)($plan['precio'] ?? 0),
                                 2
                             ) ?>
                         </strong>
 
                         <p>
-                            <?= $escape($plan['descripcion'] ?? '') ?>
+                            <?= $escape(
+                                $plan['descripcion'] ?? ''
+                            ) ?>
                         </p>
+
+                        <?php if (!empty($plan['duracion_dias'])): ?>
+                            <p class="plan-duration">
+                                Duración:
+                                <?= (int)$plan['duracion_dias'] ?>
+                                días
+                            </p>
+                        <?php endif; ?>
 
                         <a
                             class="btn"

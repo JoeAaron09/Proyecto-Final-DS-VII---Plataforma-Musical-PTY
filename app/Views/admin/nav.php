@@ -9,12 +9,14 @@ $currentPath = parse_url(
     PHP_URL_PATH
 ) ?: '/';
 
-$baseUrl = rtrim($config['base_url'], '/');
+$baseUrl = rtrim(
+    $config['base_url'],
+    '/'
+);
 
 $menuItems = [
     'generos' => 'Géneros',
     'artistas' => 'Artistas',
-    'bandas' => 'Bandas',
     'albumes' => 'Álbumes',
     'canciones' => 'Canciones',
     'locales' => 'Locales',
@@ -22,13 +24,18 @@ $menuItems = [
     'planes' => 'Premium',
 ];
 
-$isActive = static function (string $path) use ($currentPath): bool {
-    return rtrim($currentPath, '/') === rtrim($path, '/');
+$isActive = static function (
+    string $path
+) use ($currentPath): bool {
+    return rtrim($currentPath, '/')
+        === rtrim($path, '/');
 };
 ?>
 
-<aside class="admin-nav" aria-label="Navegación administrativa">
-
+<aside
+    class="admin-nav"
+    aria-label="Navegación administrativa"
+>
     <div class="admin-nav-title">
         <span>Administración</span>
         <strong>Rokola RitmoPTY</strong>
@@ -36,8 +43,14 @@ $isActive = static function (string $path) use ($currentPath): bool {
 
     <nav class="admin-nav-links">
         <a
-            class="<?= $isActive($baseUrl . '/admin') ? 'active' : '' ?>"
-            href="<?= htmlspecialchars($baseUrl) ?>/admin"
+            class="<?= $isActive($baseUrl . '/admin')
+                ? 'active'
+                : '' ?>"
+            href="<?= htmlspecialchars(
+                $baseUrl . '/admin',
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>"
         >
             <span class="admin-nav-icon">⌂</span>
             <span>Resumen</span>
@@ -45,8 +58,14 @@ $isActive = static function (string $path) use ($currentPath): bool {
 
         <?php if (Auth::role() === 'Administrador'): ?>
             <a
-                class="<?= $isActive($baseUrl . '/admin/usuarios') ? 'active' : '' ?>"
-                href="<?= htmlspecialchars($baseUrl) ?>/admin/usuarios"
+                class="<?= $isActive(
+                    $baseUrl . '/admin/usuarios'
+                ) ? 'active' : '' ?>"
+                href="<?= htmlspecialchars(
+                    $baseUrl . '/admin/usuarios',
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) ?>"
             >
                 <span class="admin-nav-icon">●</span>
                 <span>Usuarios</span>
@@ -55,14 +74,23 @@ $isActive = static function (string $path) use ($currentPath): bool {
 
         <?php foreach ($menuItems as $slug => $label): ?>
             <?php
-            $url = $baseUrl . '/admin/' . $slug;
+            $url = $baseUrl
+                . '/admin/'
+                . $slug;
             ?>
 
             <a
-                class="<?= $isActive($url) ? 'active' : '' ?>"
-                href="<?= htmlspecialchars($url) ?>"
+                class="<?= $isActive($url)
+                    ? 'active'
+                    : '' ?>"
+                href="<?= htmlspecialchars(
+                    $url,
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) ?>"
             >
                 <span class="admin-nav-icon">◆</span>
+
                 <span>
                     <?= htmlspecialchars(
                         $label,
@@ -73,5 +101,4 @@ $isActive = static function (string $path) use ($currentPath): bool {
             </a>
         <?php endforeach; ?>
     </nav>
-
 </aside>

@@ -5,7 +5,7 @@ declare(strict_types=1);
 $labels = [
     'usuarios' => 'Usuarios',
     'artistas' => 'Artistas',
-    'bandas' => 'Bandas',
+    'albumes' => 'Álbumes',
     'canciones' => 'Canciones',
     'eventos' => 'Eventos',
     'reproducciones' => 'Reproducciones',
@@ -17,10 +17,11 @@ $labels = [
     <?php require __DIR__ . '/nav.php'; ?>
 
     <section class="admin-content">
-
         <div class="admin-heading">
             <div>
-                <span class="admin-eyebrow">Resumen general</span>
+                <span class="admin-eyebrow">
+                    Resumen general
+                </span>
 
                 <h1>Panel administrativo</h1>
             </div>
@@ -35,7 +36,8 @@ $labels = [
 
                     <span>
                         <?= htmlspecialchars(
-                            $labels[$key] ?? ucfirst($key),
+                            $labels[$key]
+                                ?? ucfirst($key),
                             ENT_QUOTES,
                             'UTF-8'
                         ) ?>
@@ -47,7 +49,9 @@ $labels = [
         <section class="dashboard-reports">
             <div class="admin-list-heading">
                 <div>
-                    <span class="admin-eyebrow">Exportación de datos</span>
+                    <span class="admin-eyebrow">
+                        Exportación de datos
+                    </span>
 
                     <h2>Reportes</h2>
                 </div>
@@ -83,6 +87,5 @@ $labels = [
                 </a>
             </div>
         </section>
-
     </section>
 </div>

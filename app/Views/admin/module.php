@@ -6,23 +6,23 @@ use App\Helpers\Csrf;
 
 /*
 |--------------------------------------------------------------------------
-| Valores predeterminados
+| Valores recibidos desde el controlador
 |--------------------------------------------------------------------------
 */
 
 $rows = $rows ?? [];
 $record = $record ?? [];
 $options = $options ?? [];
+$module = $module ?? '';
+
 $definition = $definition ?? [
     'title' => 'Módulo',
     'fields' => [],
 ];
 
-$module = $module ?? '';
-
 /*
 |--------------------------------------------------------------------------
-| Funciones auxiliares
+| Utilidades
 |--------------------------------------------------------------------------
 */
 
@@ -38,31 +38,39 @@ $labels = [
     'id' => 'ID',
     'nombre' => 'Nombre',
     'titulo' => 'Título',
+
+    'tipo' => 'Tipo de artista',
+    'genero_id' => 'Género musical',
     'biografia' => 'Biografía',
     'descripcion' => 'Descripción',
-    'nacionalidad' => 'Nacionalidad',
     'pais' => 'País',
-    'anio_formacion' => 'Año de formación',
-    'anio_lanzamiento' => 'Año de lanzamiento',
+    'nacionalidad' => 'Nacionalidad',
+    'anio_inicio' => 'Año de inicio',
+
     'artista_id' => 'Artista',
-    'banda_id' => 'Banda',
     'album_id' => 'Álbum',
-    'genero_id' => 'Género',
-    'local_id' => 'Local',
+    'anio_lanzamiento' => 'Año de lanzamiento',
+
     'imagen_url' => 'Imagen',
     'portada_url' => 'Portada',
     'audio_url' => 'Archivo de audio',
     'duracion' => 'Duración',
+
+    'local_id' => 'Local',
     'direccion' => 'Dirección',
     'provincia' => 'Provincia',
     'capacidad' => 'Capacidad',
     'telefono' => 'Teléfono',
     'correo' => 'Correo electrónico',
+
     'fecha' => 'Fecha',
     'hora' => 'Hora',
     'precio' => 'Precio',
+
+    'duracion_dias' => 'Duración en días',
     'meses' => 'Duración en meses',
     'limite_reproducciones' => 'Límite de reproducciones',
+
     'estado' => 'Estado',
     'creado_en' => 'Fecha de creación',
     'actualizado_en' => 'Última actualización',
@@ -88,7 +96,11 @@ $getFieldClass = static function (
 ): string {
     if (
         $type === 'textarea'
-        || in_array($field, ['descripcion', 'biografia'], true)
+        || in_array(
+            $field,
+            ['descripcion', 'biografia'],
+            true
+        )
     ) {
         return 'form-field form-field-wide';
     }
@@ -114,7 +126,11 @@ $getOptionName = static function (
             isset($option['id'])
             && (string)$option['id'] === (string)$value
         ) {
-            return (string)($option['nombre'] ?? $option['titulo'] ?? $value);
+            return (string)(
+                $option['nombre']
+                ?? $option['titulo']
+                ?? $value
+            );
         }
     }
 
@@ -130,15 +146,24 @@ $formatValue = static function (
     }
 
     if (str_ends_with($column, '_id')) {
-        return $getOptionName($options, $column, $value);
+        return $getOptionName(
+            $options,
+            $column,
+            $value
+        );
     }
 
     if ($column === 'estado') {
-        return (int)$value === 1 ? 'Activo' : 'Inactivo';
+        return (int)$value === 1
+            ? 'Activo'
+            : 'Inactivo';
     }
 
     if ($column === 'precio') {
-        return '$' . number_format((float)$value, 2);
+        return 'B/. ' . number_format(
+            (float)$value,
+            2
+        );
     }
 
     if ($column === 'fecha') {
@@ -179,7 +204,7 @@ $formatValue = static function (
         return mb_strimwidth(
             (string)$value,
             0,
-            120,
+            130,
             '…'
         );
     }
@@ -187,7 +212,7 @@ $formatValue = static function (
     return mb_strimwidth(
         (string)$value,
         0,
-        70,
+        75,
         '…'
     );
 };
@@ -209,18 +234,11 @@ $tableColumns = [
     'artistas' => [
         'id',
         'nombre',
-        'nacionalidad',
-        'biografia',
-        'imagen_url',
-        'estado',
-    ],
-
-    'bandas' => [
-        'id',
-        'nombre',
+        'tipo',
+        'genero_id',
         'pais',
-        'anio_formacion',
-        'descripcion',
+        'anio_inicio',
+        'biografia',
         'imagen_url',
         'estado',
     ],
@@ -229,8 +247,6 @@ $tableColumns = [
         'id',
         'nombre',
         'artista_id',
-        'banda_id',
-        'genero_id',
         'anio_lanzamiento',
         'portada_url',
         'descripcion',
@@ -241,11 +257,10 @@ $tableColumns = [
         'id',
         'nombre',
         'artista_id',
-        'banda_id',
         'album_id',
-        'genero_id',
         'duracion',
         'audio_url',
+        'imagen_url',
         'estado',
     ],
 
@@ -279,26 +294,20 @@ $tableColumns = [
         'id',
         'nombre',
         'precio',
-        'meses',
-        'limite_reproducciones',
-        'descripcion',
-        'estado',
-    ],
-
-    'premium' => [
-        'id',
-        'nombre',
-        'precio',
-        'meses',
-        'limite_reproducciones',
+        'duracion_dias',
         'descripcion',
         'estado',
     ],
 ];
 
 $visibleColumns = $tableColumns[$module]
-    ?? ($rows !== [] ? array_keys($rows[0]) : []);
+    ?? (
+        $rows !== []
+            ? array_keys($rows[0])
+            : []
+    );
 
+$hasRecord = is_array($record) && $record !== [];
 ?>
 
 <div class="admin-layout">
@@ -306,7 +315,6 @@ $visibleColumns = $tableColumns[$module]
 
     <section class="admin-content">
 
-        <!-- Encabezado del módulo -->
         <div class="admin-heading">
             <div>
                 <span class="admin-eyebrow">
@@ -318,7 +326,7 @@ $visibleColumns = $tableColumns[$module]
                 </h1>
             </div>
 
-            <?php if ($record !== []): ?>
+            <?php if ($hasRecord): ?>
                 <a
                     class="btn btn-secondary"
                     href="<?= $escape($config['base_url']) ?>/admin/<?= $escape($module) ?>"
@@ -328,7 +336,6 @@ $visibleColumns = $tableColumns[$module]
             <?php endif; ?>
         </div>
 
-        <!-- Formulario -->
         <form
             class="panel admin-form"
             method="post"
@@ -348,7 +355,18 @@ $visibleColumns = $tableColumns[$module]
                     <?php
                     $label = $getLabel($field);
                     $currentValue = $record[$field] ?? '';
-                    $fieldClass = $getFieldClass($field, $type);
+                    $fieldClass = $getFieldClass(
+                        $field,
+                        $type
+                    );
+
+                    $isSelect = (
+                        str_starts_with($type, 'select:')
+                        || str_starts_with(
+                            $type,
+                            'select_static:'
+                        )
+                    );
                     ?>
 
                     <label class="<?= $escape($fieldClass) ?>">
@@ -363,24 +381,40 @@ $visibleColumns = $tableColumns[$module]
                                 placeholder="Escriba <?= $escape(mb_strtolower($label)) ?>"
                             ><?= $escape($currentValue) ?></textarea>
 
-                        <?php elseif (str_starts_with($type, 'select:')): ?>
+                        <?php elseif ($isSelect): ?>
 
                             <select name="<?= $escape($field) ?>">
                                 <option value="">
-                                    Seleccione una opción
+                                    <?= $field === 'album_id'
+                                        ? 'Sin álbum / sencillo'
+                                        : 'Seleccione una opción' ?>
                                 </option>
 
                                 <?php foreach ($options[$field] ?? [] as $option): ?>
                                     <?php
                                     $optionId = $option['id'] ?? '';
+
                                     $optionName = $option['nombre']
                                         ?? $option['titulo']
                                         ?? 'Opción';
+
+                                    /*
+                                     * En el selector de artistas se muestra
+                                     * también el tipo cuando esté disponible.
+                                     */
+                                    if (
+                                        $field === 'artista_id'
+                                        && !empty($option['tipo'])
+                                    ) {
+                                        $optionName .= ' — '
+                                            . $option['tipo'];
+                                    }
                                     ?>
 
                                     <option
                                         value="<?= $escape($optionId) ?>"
-                                        <?= (string)$currentValue === (string)$optionId
+                                        <?= (string)$currentValue
+                                            === (string)$optionId
                                             ? 'selected'
                                             : '' ?>
                                     >
@@ -391,6 +425,14 @@ $visibleColumns = $tableColumns[$module]
 
                         <?php elseif (str_starts_with($type, 'file:')): ?>
 
+                            <?php
+                            $fileKind = substr($type, 5);
+
+                            $accept = $fileKind === 'audio'
+                                ? 'audio/mpeg,audio/wav,audio/ogg,audio/mp4'
+                                : 'image/jpeg,image/png,image/webp,image/gif';
+                            ?>
+
                             <input
                                 type="hidden"
                                 name="old_<?= $escape($field) ?>"
@@ -400,20 +442,19 @@ $visibleColumns = $tableColumns[$module]
                             <input
                                 type="file"
                                 name="<?= $escape($field) ?>"
-                                accept="<?= str_contains($type, 'audio')
-                                    ? 'audio/*'
-                                    : 'image/jpeg,image/png,image/webp' ?>"
+                                accept="<?= $escape($accept) ?>"
                             >
 
                             <?php if ($currentValue !== ''): ?>
                                 <?php
-                                $filePath = parse_url(
+                                $parsedPath = parse_url(
                                     (string)$currentValue,
                                     PHP_URL_PATH
                                 );
 
                                 $fileName = basename(
-                                    $filePath ?: (string)$currentValue
+                                    $parsedPath
+                                    ?: (string)$currentValue
                                 );
                                 ?>
 
@@ -425,13 +466,35 @@ $visibleColumns = $tableColumns[$module]
 
                         <?php else: ?>
 
+                            <?php
+                            $inputAttributes = '';
+
+                            if ($type === 'number') {
+                                $inputAttributes = ' step="any"';
+                            }
+
+                            if (
+                                in_array(
+                                    $field,
+                                    [
+                                        'nombre',
+                                        'pais',
+                                        'correo',
+                                        'fecha',
+                                        'hora',
+                                    ],
+                                    true
+                                )
+                            ) {
+                                $inputAttributes .= ' required';
+                            }
+                            ?>
+
                             <input
                                 type="<?= $escape($type) ?>"
                                 name="<?= $escape($field) ?>"
                                 value="<?= $escape($currentValue) ?>"
-                                <?= $type === 'number'
-                                    ? 'step="any"'
-                                    : '' ?>
+                                <?= $inputAttributes ?>
                             >
 
                         <?php endif; ?>
@@ -441,12 +504,12 @@ $visibleColumns = $tableColumns[$module]
 
             <div class="admin-form-actions">
                 <button class="btn" type="submit">
-                    <?= $record !== []
+                    <?= $hasRecord
                         ? 'Actualizar registro'
                         : 'Guardar registro' ?>
                 </button>
 
-                <?php if ($record !== []): ?>
+                <?php if ($hasRecord): ?>
                     <span class="editing-indicator">
                         Editando el registro
                         #<?= (int)($record['id'] ?? 0) ?>
@@ -455,7 +518,6 @@ $visibleColumns = $tableColumns[$module]
             </div>
         </form>
 
-        <!-- Encabezado de registros -->
         <div class="admin-list-heading">
             <div>
                 <span class="admin-eyebrow">
@@ -473,7 +535,6 @@ $visibleColumns = $tableColumns[$module]
             </span>
         </div>
 
-        <!-- Registros -->
         <div class="admin-records">
 
             <?php if ($rows === []): ?>
@@ -489,11 +550,11 @@ $visibleColumns = $tableColumns[$module]
 
             <?php foreach ($rows as $row): ?>
                 <?php
+                $rowId = (int)($row['id'] ?? 0);
+
                 $recordTitle = $row['nombre']
                     ?? $row['titulo']
                     ?? 'Registro';
-
-                $rowId = (int)($row['id'] ?? 0);
                 ?>
 
                 <article class="admin-record-card">
@@ -546,6 +607,7 @@ $visibleColumns = $tableColumns[$module]
                                 }
 
                                 $rawValue = $row[$column];
+
                                 $displayValue = $formatValue(
                                     $column,
                                     $rawValue

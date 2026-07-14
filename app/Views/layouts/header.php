@@ -12,11 +12,25 @@ $currentPath = parse_url(
     PHP_URL_PATH
 ) ?: '/';
 
-$isAdmin = str_contains($currentPath, '/admin');
-$isAccount = str_contains($currentPath, '/mi-cuenta');
-$isLogin = str_contains($currentPath, '/login');
+$baseUrl = rtrim(
+    $config['base_url'],
+    '/'
+);
 
-$baseUrl = rtrim($config['base_url'], '/');
+$isAdmin = preg_match(
+    '#/admin(?:/|$)#',
+    $currentPath
+) === 1;
+
+$isAccount = preg_match(
+    '#/mi-cuenta(?:/|$)#',
+    $currentPath
+) === 1;
+
+$isLogin = preg_match(
+    '#/login(?:/|$)#',
+    $currentPath
+) === 1;
 ?>
 
 <!doctype html>
@@ -43,7 +57,12 @@ $baseUrl = rtrim($config['base_url'], '/');
     >
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
 
     <link
         href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap"
@@ -52,13 +71,21 @@ $baseUrl = rtrim($config['base_url'], '/');
 
     <link
         rel="stylesheet"
-        href="<?= htmlspecialchars($baseUrl) ?>/assets/css/main.css?v=<?= time() ?>"
+        href="<?= htmlspecialchars(
+            $baseUrl,
+            ENT_QUOTES,
+            'UTF-8'
+        ) ?>/assets/css/main.css?v=<?= time() ?>"
     >
 
     <?php if ($isAdmin): ?>
         <link
             rel="stylesheet"
-            href="<?= htmlspecialchars($baseUrl) ?>/assets/css/admin.css?v=<?= time() ?>"
+            href="<?= htmlspecialchars(
+                $baseUrl,
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>/assets/css/admin.css?v=<?= time() ?>"
         >
     <?php endif; ?>
 </head>
@@ -70,18 +97,22 @@ $baseUrl = rtrim($config['base_url'], '/');
 
         <a
             class="logo"
-            href="<?= htmlspecialchars($baseUrl) ?>/"
+            href="<?= htmlspecialchars(
+                $baseUrl,
+                ENT_QUOTES,
+                'UTF-8'
+            ) ?>/"
+            aria-label="Ir a la página de inicio"
         >
             ROKOLA <span>RITMOPTY</span>
         </a>
 
-        <nav class="main-nav" aria-label="Navegación principal">
+        <nav
+            class="main-nav"
+            aria-label="Navegación principal"
+        >
             <a href="<?= htmlspecialchars($baseUrl) ?>/#artistas">
                 Artistas
-            </a>
-
-            <a href="<?= htmlspecialchars($baseUrl) ?>/#bandas">
-                Bandas
             </a>
 
             <a href="<?= htmlspecialchars($baseUrl) ?>/#canciones">
@@ -90,6 +121,10 @@ $baseUrl = rtrim($config['base_url'], '/');
 
             <a href="<?= htmlspecialchars($baseUrl) ?>/#eventos">
                 Eventos
+            </a>
+
+            <a href="<?= htmlspecialchars($baseUrl) ?>/#locales">
+                Locales
             </a>
 
             <?php if (Auth::check()): ?>
@@ -138,8 +173,22 @@ $baseUrl = rtrim($config['base_url'], '/');
 </header>
 
 <?php if ($flash): ?>
-    <div class="flash <?= htmlspecialchars((string)$flash[0]) ?>">
-        <?= htmlspecialchars((string)$flash[1]) ?>
+    <?php
+    $flashType = htmlspecialchars(
+        (string)($flash[0] ?? 'success'),
+        ENT_QUOTES,
+        'UTF-8'
+    );
+
+    $flashMessage = htmlspecialchars(
+        (string)($flash[1] ?? ''),
+        ENT_QUOTES,
+        'UTF-8'
+    );
+    ?>
+
+    <div class="flash <?= $flashType ?>">
+        <?= $flashMessage ?>
     </div>
 <?php endif; ?>
 
