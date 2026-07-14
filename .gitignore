@@ -12,9 +12,6 @@ config.local.php
 composer.lock
 package-lock.json
 
-/public/uploads/
-/uploads/
-
 # Ignorar todos los SQL
 database/*.sql
 
