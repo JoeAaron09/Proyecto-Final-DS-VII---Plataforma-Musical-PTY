@@ -1,1 +1,237 @@
-<div class="admin-layout"><?php require __DIR__.'/nav.php'?><section><h1>USUARIOS</h1><form class="panel form-grid" method="post" action="<?=$config['base_url']?>/admin/usuarios/guardar"><?=Csrf::field()?><input type="hidden" name="id" value="<?=$record['id']??''?>"><label>Nombre<input name="nombre" value="<?=htmlspecialchars($record['nombre']??'')?>" required></label><label>Correo<input type="email" name="correo" value="<?=htmlspecialchars($record['correo']??'')?>" required></label><label>Rol<select name="rol_id"><?php foreach($roles as $r):?><option value="<?=$r['id']?>" <?=($record['rol_id']??3)==$r['id']?'selected':''?>><?=htmlspecialchars($r['nombre'])?></option><?php endforeach;?></select></label><label>Nacionalidad<input name="nacionalidad" value="<?=htmlspecialchars($record['nacionalidad']??'Panameña')?>"></label><label>Tipo<select name="tipo_usuario"><option>free</option><option <?=($record['tipo_usuario']??'')==='premium'?'selected':''?>>premium</option></select></label><label>Estado<select name="estado"><option value="1">Activo</option><option value="0" <?=isset($record)&&!$record['estado']?'selected':''?>>Inactivo</option></select></label><label>Contraseña<input type="password" name="password" <?=$record?'':'required'?>></label><button class="btn">Guardar</button></form><div class="table-wrap"><table><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Tipo</th><th>Estado</th><th></th></tr><?php foreach($rows as $u):?><tr><td><?=$u['id']?></td><td><?=htmlspecialchars($u['nombre'])?></td><td><?=htmlspecialchars($u['correo'])?></td><td><?=$u['rol']?></td><td><?=$u['tipo_usuario']?></td><td><?=$u['estado']?'Activo':'Inactivo'?></td><td><a href="?edit=<?=$u['id']?>">Editar</a></td></tr><?php endforeach;?></table></div></section></div>
+<?php
+
+declare(strict_types=1);
+
+use App\Helpers\Csrf;
+
+$escape = static function (mixed $value): string {
+    return htmlspecialchars(
+        (string)$value,
+        ENT_QUOTES,
+        'UTF-8'
+    );
+};
+?>
+
+<div class="admin-layout">
+    <?php require __DIR__ . '/nav.php'; ?>
+
+    <section class="admin-content">
+        <div class="admin-heading">
+            <div>
+                <span class="admin-eyebrow">
+                    Administración
+                </span>
+
+                <h1>Usuarios</h1>
+            </div>
+        </div>
+
+        <form
+            class="panel admin-form"
+            method="post"
+            action="<?= $escape($config['base_url']) ?>/admin/usuarios/guardar"
+        >
+            <?= Csrf::field() ?>
+
+            <input
+                type="hidden"
+                name="id"
+                value="<?= $escape($record['id'] ?? '') ?>"
+            >
+
+            <div class="admin-form-grid">
+                <label class="form-field">
+                    <span>Nombre</span>
+
+                    <input
+                        type="text"
+                        name="nombre"
+                        value="<?= $escape($record['nombre'] ?? '') ?>"
+                        required
+                    >
+                </label>
+
+                <label class="form-field">
+                    <span>Correo</span>
+
+                    <input
+                        type="email"
+                        name="correo"
+                        value="<?= $escape($record['correo'] ?? '') ?>"
+                        required
+                    >
+                </label>
+
+                <label class="form-field">
+                    <span>Rol</span>
+
+                    <select name="rol_id" required>
+                        <?php foreach ($roles as $role): ?>
+                            <option
+                                value="<?= (int)$role['id'] ?>"
+                                <?= (int)($record['rol_id'] ?? 3)
+                                    === (int)$role['id']
+                                    ? 'selected'
+                                    : '' ?>
+                            >
+                                <?= $escape($role['nombre']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="form-field">
+                    <span>Nacionalidad</span>
+
+                    <input
+                        type="text"
+                        name="nacionalidad"
+                        value="<?= $escape(
+                            $record['nacionalidad']
+                            ?? 'Panameña'
+                        ) ?>"
+                    >
+                </label>
+
+                <label class="form-field">
+                    <span>Tipo de usuario</span>
+
+                    <select name="tipo_usuario" required>
+                        <option
+                            value="gratuito"
+                            <?= ($record['tipo_usuario'] ?? 'gratuito')
+                                === 'gratuito'
+                                ? 'selected'
+                                : '' ?>
+                        >
+                            Gratuito
+                        </option>
+
+                        <option
+                            value="premium"
+                            <?= ($record['tipo_usuario'] ?? '')
+                                === 'premium'
+                                ? 'selected'
+                                : '' ?>
+                        >
+                            Premium
+                        </option>
+                    </select>
+                </label>
+
+                <label class="form-field">
+                    <span>Estado</span>
+
+                    <select name="estado" required>
+                        <option
+                            value="1"
+                            <?= (int)($record['estado'] ?? 1) === 1
+                                ? 'selected'
+                                : '' ?>
+                        >
+                            Activo
+                        </option>
+
+                        <option
+                            value="0"
+                            <?= isset($record['estado'])
+                                && (int)$record['estado'] === 0
+                                ? 'selected'
+                                : '' ?>
+                        >
+                            Inactivo
+                        </option>
+                    </select>
+                </label>
+
+                <label class="form-field">
+                    <span>Contraseña</span>
+
+                    <input
+                        type="password"
+                        name="password"
+                        <?= empty($record) ? 'required' : '' ?>
+                    >
+                </label>
+            </div>
+
+            <div class="admin-form-actions">
+                <button class="btn" type="submit">
+                    <?= empty($record)
+                        ? 'Guardar usuario'
+                        : 'Actualizar usuario' ?>
+                </button>
+            </div>
+        </form>
+
+        <div class="admin-list-heading">
+            <div>
+                <span class="admin-eyebrow">
+                    Usuarios registrados
+                </span>
+
+                <h2>Registros existentes</h2>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Correo</th>
+                        <th>Rol</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <?php foreach ($rows as $userRow): ?>
+                        <tr>
+                            <td>
+                                <?= (int)$userRow['id'] ?>
+                            </td>
+
+                            <td>
+                                <?= $escape($userRow['nombre']) ?>
+                            </td>
+
+                            <td>
+                                <?= $escape($userRow['correo']) ?>
+                            </td>
+
+                            <td>
+                                <?= $escape($userRow['rol']) ?>
+                            </td>
+
+                            <td>
+                                <?= $userRow['tipo_usuario']
+                                    === 'premium'
+                                    ? 'Premium'
+                                    : 'Gratuito' ?>
+                            </td>
+
+                            <td>
+                                <?= (int)$userRow['estado'] === 1
+                                    ? 'Activo'
+                                    : 'Inactivo' ?>
+                            </td>
+
+                            <td>
+                                <a
+                                    href="?edit=<?= (int)$userRow['id'] ?>"
+                                >
+                                    Editar
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
