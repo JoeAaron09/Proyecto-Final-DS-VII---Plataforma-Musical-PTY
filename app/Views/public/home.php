@@ -139,16 +139,15 @@ $plans = $plans ?? [];
                         <?php endif; ?>
 
                         <?php if (!empty($artistItem['biografia'])): ?>
-                            <p>
-                                <?= $escape(
-                                    mb_strimwidth(
-                                        (string)$artistItem['biografia'],
-                                        0,
-                                        170,
-                                        '...'
-                                    )
-                                ) ?>
-                            </p>
+                            <details class="artist-biography">
+                                <summary>Leer información</summary>
+
+                                <p>
+                                    <?= nl2br($escape(
+                                        (string)$artistItem['biografia']
+                                    )) ?>
+                                </p>
+                            </details>
                         <?php endif; ?>
                     </div>
                 </article>
@@ -280,7 +279,7 @@ $plans = $plans ?? [];
 
         <?php if (!empty($artist)): ?>
             <div class="highlight">
-                <span>Artista del momento:</span>
+                <span>Artista más escuchado:</span>
 
                 <strong>
                     <?= $escape($artist['artista'] ?? '') ?>
@@ -300,63 +299,90 @@ $plans = $plans ?? [];
 
                 <small>
                     <?= (int)($artist['total'] ?? 0) ?>
-                    reproducciones
+                    reproducciones entre sus canciones
                 </small>
             </div>
         <?php endif; ?>
 
-        <div class="table-wrap">
-            <table class="public-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Canción</th>
-                        <th>Artista</th>
-                        <th>Reproducciones</th>
-                    </tr>
-                </thead>
+        <?php if ($top === []): ?>
+            <div class="public-empty-state">
+                <h3>Todavía no hay reproducciones</h3>
+                <p>Las canciones más escuchadas aparecerán aquí.</p>
+            </div>
+        <?php else: ?>
+            <?php
+            $podiumOrder = [1, 0, 2];
+            $podiumLabels = [
+                1 => 'Segundo lugar',
+                0 => 'Primer lugar',
+                2 => 'Tercer lugar',
+            ];
+            ?>
 
-                <tbody>
-                    <?php if ($top === []): ?>
-                        <tr>
-                            <td
-                                colspan="4"
-                                class="empty-table"
+            <div class="top-podium" aria-label="Podio de canciones más escuchadas">
+                <?php foreach ($podiumOrder as $topIndex): ?>
+                    <?php if (!isset($top[$topIndex])) { continue; } ?>
+                    <?php
+                    $topItem = $top[$topIndex];
+                    $position = $topIndex + 1;
+                    $topImage = $topItem['imagen_url']
+                        ?: 'https://placehold.co/600x600/1b1b1b/ffffff?text=Cancion';
+                    $plays = (int)($topItem['reproducciones'] ?? 0);
+                    ?>
+                    <article class="podium-card podium-card-<?= $position ?>">
+                        <span class="podium-rank" aria-label="<?= $podiumLabels[$topIndex] ?>">
+                            <?= $position ?>
+                        </span>
+                        <div class="podium-cover">
+                            <img
+                                src="<?= $escape($topImage) ?>"
+                                alt="Portada de <?= $escape($topItem['cancion'] ?? '') ?>"
+                                loading="lazy"
                             >
-                                Todavía no hay reproducciones
-                                registradas.
-                            </td>
-                        </tr>
-                    <?php endif; ?>
+                        </div>
+                        <div class="podium-info">
+                            <span class="podium-place"><?= $podiumLabels[$topIndex] ?></span>
+                            <h3><?= $escape($topItem['cancion'] ?? '') ?></h3>
+                            <p><?= $escape($topItem['artista'] ?? '') ?></p>
+                            <strong><?= $plays ?> reproducci<?= $plays === 1 ? 'ón' : 'ones' ?></strong>
+                        </div>
+                        <div class="podium-step" aria-hidden="true">
+                            <span><?= $position ?></span>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            </div>
 
-                    <?php foreach ($top as $index => $topItem): ?>
-                        <tr>
-                            <td><?= $index + 1 ?></td>
-
-                            <td>
-                                <?= $escape(
-                                    $topItem['cancion'] ?? ''
-                                ) ?>
-                            </td>
-
-                            <td>
-                                <?= $escape(
-                                    $topItem['artista'] ?? ''
-                                ) ?>
-                            </td>
-
-                            <td>
-                                <?= (int)(
-                                    $topItem['reproducciones']
-                                    ?? $topItem['total']
-                                    ?? 0
-                                ) ?>
-                            </td>
-                        </tr>
+            <?php if (count($top) > 3): ?>
+                <div class="top-ranking" aria-label="Resto del Top 10">
+                    <div class="top-ranking-heading">
+                        <span>Posición</span>
+                        <span>Canción</span>
+                        <span>Reproducciones</span>
+                    </div>
+                    <?php foreach (array_slice($top, 3) as $index => $topItem): ?>
+                        <?php
+                        $position = $index + 4;
+                        $plays = (int)($topItem['reproducciones'] ?? 0);
+                        $topImage = $topItem['imagen_url']
+                            ?: 'https://placehold.co/200x200/1b1b1b/ffffff?text=Cancion';
+                        ?>
+                        <article class="ranking-row">
+                            <strong class="ranking-position"><?= $position ?></strong>
+                            <img src="<?= $escape($topImage) ?>" alt="" loading="lazy">
+                            <div class="ranking-song">
+                                <h3><?= $escape($topItem['cancion'] ?? '') ?></h3>
+                                <p><?= $escape($topItem['artista'] ?? '') ?></p>
+                            </div>
+                            <span class="ranking-plays">
+                                <strong><?= $plays ?></strong>
+                                <small>reproducciones</small>
+                            </span>
+                        </article>
                     <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
 
     </div>
 </section>
@@ -448,6 +474,12 @@ $plans = $plans ?? [];
                                 2
                             ) ?>
                         </strong>
+
+                        <?php if (!in_array(Auth::role(), ['Administrador', 'Operador'], true)): ?>
+                            <a class="btn event-ticket-link" href="<?= $escape($baseUrl) ?>/eventos/<?= (int)$event['id'] ?>">
+                                Ver evento y entradas
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </article>
             <?php endforeach; ?>
@@ -526,6 +558,7 @@ $plans = $plans ?? [];
 </section>
 
 <!-- PREMIUM -->
+<?php if (!in_array(Auth::role(), ['Administrador', 'Operador'], true)): ?>
 <section class="public-section premium-section">
     <div class="container">
 
@@ -593,3 +626,4 @@ $plans = $plans ?? [];
 
     </div>
 </section>
+<?php endif; ?>

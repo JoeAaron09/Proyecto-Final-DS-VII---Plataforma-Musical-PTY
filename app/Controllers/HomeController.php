@@ -36,6 +36,7 @@ final class HomeController extends Controller
         $top = $db->query(
             "SELECT
                 c.nombre AS cancion,
+                c.imagen_url,
                 a.nombre AS artista,
                 COUNT(r.id) AS reproducciones
              FROM reproducciones r
@@ -50,6 +51,7 @@ final class HomeController extends Controller
              GROUP BY
                 c.id,
                 c.nombre,
+                c.imagen_url,
                 a.id,
                 a.nombre
              ORDER BY reproducciones DESC

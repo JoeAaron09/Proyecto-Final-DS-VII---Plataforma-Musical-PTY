@@ -105,6 +105,7 @@ final class AccountController extends Controller
                 co.itbms,
                 co.total,
                 co.estado,
+                co.metodo_pago,
                 DATE_FORMAT(
                     co.fecha_hora,
                     '%d/%m/%Y %H:%i'
@@ -129,6 +130,17 @@ final class AccountController extends Controller
                 en.itbms,
                 en.total,
                 en.estado,
+                en.metodo_pago,
+                en.numero_factura,
+                (
+                    SELECT GROUP_CONCAT(
+                        ea.asiento
+                        ORDER BY ea.asiento
+                        SEPARATOR ', '
+                    )
+                    FROM entrada_asientos ea
+                    WHERE ea.entrada_id = en.id
+                ) AS asientos,
                 DATE_FORMAT(
                     en.fecha_hora,
                     '%d/%m/%Y %H:%i'
@@ -332,7 +344,20 @@ final class AccountController extends Controller
     public function buyPlan(int $planId): void
     {
         Auth::requireLogin();
+        if (in_array(Auth::role(), ['Administrador', 'Operador'], true)) {
+            http_response_code(403);
+            exit('El personal del sistema ya cuenta con acceso Premium.');
+        }
         Csrf::verify();
+
+        $paymentMethod = (string)($_POST['metodo_pago'] ?? '');
+        $validPaymentMethods = ['yappy', 'tarjeta', 'transferencia'];
+
+        if (!in_array($paymentMethod, $validPaymentMethods, true)) {
+            throw new RuntimeException(
+                'Seleccione un método de pago válido.'
+            );
+        }
 
         $db = Database::connection();
 
@@ -386,8 +411,9 @@ final class AccountController extends Controller
                     itbms,
                     total,
                     estado,
+                    metodo_pago,
                     fecha_hora
-                 ) VALUES (?, ?, ?, ?, ?, 'pagada', NOW())"
+                 ) VALUES (?, ?, ?, ?, ?, 'pagada', ?, NOW())"
             );
 
             $purchaseStatement->execute([
@@ -396,6 +422,7 @@ final class AccountController extends Controller
                 $subtotal,
                 $tax,
                 $total,
+                $paymentMethod,
             ]);
 
             $purchaseId = (int)$db->lastInsertId();

@@ -318,6 +318,12 @@ CREATE TABLE compras (
         'cancelada'
     ) NOT NULL DEFAULT 'pagada',
 
+    metodo_pago ENUM(
+        'yappy',
+        'tarjeta',
+        'transferencia'
+    ) NULL,
+
     fecha_hora DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_compras_usuario
@@ -458,6 +464,14 @@ CREATE TABLE entradas (
         'cancelada'
     ) NOT NULL DEFAULT 'pagada',
 
+    metodo_pago ENUM(
+        'yappy',
+        'tarjeta',
+        'transferencia'
+    ) NULL,
+    numero_factura VARCHAR(40) NULL UNIQUE,
+    qr_token CHAR(48) NULL UNIQUE,
+
     fecha_hora DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_entradas_evento
@@ -475,6 +489,34 @@ CREATE TABLE entradas (
     INDEX idx_entradas_evento (evento_id),
     INDEX idx_entradas_usuario (usuario_id),
     INDEX idx_entradas_fecha (fecha_hora)
+) ENGINE=InnoDB;
+
+
+/* =========================================================
+   16. ASIENTOS ASIGNADOS A ENTRADAS
+   ========================================================= */
+
+CREATE TABLE entrada_asientos (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    entrada_id BIGINT UNSIGNED NOT NULL,
+    evento_id INT UNSIGNED NOT NULL,
+    asiento VARCHAR(10) NOT NULL,
+    creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_entrada_asientos_entrada
+        FOREIGN KEY (entrada_id)
+        REFERENCES entradas(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_entrada_asientos_evento
+        FOREIGN KEY (evento_id)
+        REFERENCES eventos(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT uk_evento_asiento UNIQUE (evento_id, asiento),
+    INDEX idx_entrada_asientos_entrada (entrada_id)
 ) ENGINE=InnoDB;
 
 
@@ -937,6 +979,7 @@ INSERT INTO compras (
     itbms,
     total,
     estado,
+    metodo_pago,
     fecha_hora
 ) VALUES
 (
@@ -946,6 +989,7 @@ INSERT INTO compras (
     0.35,
     5.34,
     'pagada',
+    'yappy',
     NOW()
 );
 
@@ -981,6 +1025,9 @@ INSERT INTO entradas (
     itbms,
     total,
     estado,
+    metodo_pago,
+    numero_factura,
+    qr_token,
     fecha_hora
 ) VALUES
 (
@@ -992,6 +1039,9 @@ INSERT INTO entradas (
     2.10,
     32.10,
     'pagada',
+    'yappy',
+    'RRP-DEMO-0001',
+    '111111111111111111111111111111111111111111111111',
     NOW()
 ),
 (
@@ -1003,6 +1053,9 @@ INSERT INTO entradas (
     1.58,
     24.08,
     'pagada',
+    'tarjeta',
+    'RRP-DEMO-0002',
+    '222222222222222222222222222222222222222222222222',
     NOW()
 );
 
@@ -1059,3 +1112,44 @@ LEFT JOIN generos g
 LEFT JOIN albumes al
     ON al.id = c.album_id
 ORDER BY c.nombre;
+
+USE rokola_ritmopty;
+
+CREATE TABLE listas (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT UNSIGNED NOT NULL,
+    nombre VARCHAR(150) NOT NULL,
+    descripcion TEXT NULL,
+    creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_listas_usuario
+        FOREIGN KEY (usuario_id)
+        REFERENCES usuarios(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    INDEX idx_listas_usuario (usuario_id)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE lista_canciones (
+    lista_id INT UNSIGNED NOT NULL,
+    cancion_id INT UNSIGNED NOT NULL,
+    agregado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (lista_id, cancion_id),
+
+    CONSTRAINT fk_lista_canciones_lista
+        FOREIGN KEY (lista_id)
+        REFERENCES listas(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_lista_canciones_cancion
+        FOREIGN KEY (cancion_id)
+        REFERENCES canciones(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    INDEX idx_lista_canciones_cancion (cancion_id)
+) ENGINE=InnoDB;

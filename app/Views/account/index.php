@@ -15,6 +15,12 @@ $escape = static function (mixed $value): string {
 
 $user = Auth::user() ?? [];
 $baseUrl = rtrim($config['base_url'], '/');
+$isAdministrator = Auth::role() === 'Administrador';
+$isStaff = in_array(
+    Auth::role(),
+    ['Administrador', 'Operador'],
+    true
+);
 ?>
 
 <section class="account-section">
@@ -130,6 +136,7 @@ $baseUrl = rtrim($config['base_url'], '/');
     </div>
 </section>
 
+<?php if (!$isStaff): ?>
 <section class="public-section public-section-alt">
     <div class="container">
         <div class="section-heading">
@@ -174,6 +181,26 @@ $baseUrl = rtrim($config['base_url'], '/');
                         >
                             <?= Csrf::field() ?>
 
+                            <fieldset class="plan-payment-methods">
+                                <legend>Método de pago simulado</legend>
+                                <label>
+                                    <input type="radio" name="metodo_pago" value="yappy" checked>
+                                    <span>Yappy</span>
+                                </label>
+                                <label>
+                                    <input type="radio" name="metodo_pago" value="tarjeta">
+                                    <span>Tarjeta</span>
+                                </label>
+                                <label>
+                                    <input type="radio" name="metodo_pago" value="transferencia">
+                                    <span>Transferencia</span>
+                                </label>
+                            </fieldset>
+
+                            <p class="simulation-note">
+                                Demostración: no se procesará dinero real.
+                            </p>
+
                             <button class="btn" type="submit">
                                 Adquirir plan
                             </button>
@@ -185,6 +212,9 @@ $baseUrl = rtrim($config['base_url'], '/');
     </div>
 </section>
 
+<?php endif; ?>
+
+<?php if (!$isStaff): ?>
 <section class="public-section">
     <div class="container">
         <div class="section-heading">
@@ -233,35 +263,17 @@ $baseUrl = rtrim($config['base_url'], '/');
                             ) ?>
                         </strong>
 
-                        <form
-                            class="ticket-form"
-                            method="post"
-                            action="<?= $escape($baseUrl) ?>/eventos/<?= (int)$event['id'] ?>/comprar"
-                        >
-                            <?= Csrf::field() ?>
-
-                            <label>
-                                Cantidad
-
-                                <input
-                                    type="number"
-                                    name="cantidad"
-                                    min="1"
-                                    value="1"
-                                    required
-                                >
-                            </label>
-
-                            <button class="btn" type="submit">
-                                Comprar entradas
-                            </button>
-                        </form>
+                        <a class="btn event-ticket-link" href="<?= $escape($baseUrl) ?>/eventos/<?= (int)$event['id'] ?>">
+                            Ver evento y entradas
+                        </a>
                     </div>
                 </article>
             <?php endforeach; ?>
         </div>
     </div>
 </section>
+
+<?php endif; ?>
 
 <section class="public-section public-section-alt">
     <div class="container">
@@ -453,6 +465,7 @@ $baseUrl = rtrim($config['base_url'], '/');
                         <th>ITBMS</th>
                         <th>Total</th>
                         <th>Estado</th>
+                        <th>Método</th>
                         <th>Fecha</th>
                     </tr>
                 </thead>
@@ -462,7 +475,7 @@ $baseUrl = rtrim($config['base_url'], '/');
                         <tr>
                             <td
                                 class="empty-table"
-                                colspan="6"
+                                colspan="7"
                             >
                                 No hay compras de planes registradas.
                             </td>
@@ -504,6 +517,15 @@ $baseUrl = rtrim($config['base_url'], '/');
                             </td>
 
                             <td>
+                                <?= $escape(match ($purchase['metodo_pago'] ?? '') {
+                                    'yappy' => 'Yappy',
+                                    'tarjeta' => 'Tarjeta',
+                                    'transferencia' => 'Transferencia',
+                                    default => 'No registrado',
+                                }) ?>
+                            </td>
+
+                            <td>
                                 <?= $escape($purchase['fecha']) ?>
                             </td>
                         </tr>
@@ -514,7 +536,7 @@ $baseUrl = rtrim($config['base_url'], '/');
     </div>
 </section>
 
-<section class="public-section">
+<section id="mis-entradas" class="public-section">
     <div class="container">
         <div class="section-heading">
             <span>Entradas adquiridas</span>
@@ -532,6 +554,7 @@ $baseUrl = rtrim($config['base_url'], '/');
                         <th>Total</th>
                         <th>Estado</th>
                         <th>Compra</th>
+                        <th>Factura</th>
                     </tr>
                 </thead>
 
@@ -540,7 +563,7 @@ $baseUrl = rtrim($config['base_url'], '/');
                         <tr>
                             <td
                                 class="empty-table"
-                                colspan="7"
+                                colspan="8"
                             >
                                 No hay entradas registradas.
                             </td>
@@ -592,6 +615,12 @@ $baseUrl = rtrim($config['base_url'], '/');
                                 <?= $escape(
                                     $ticket['fecha_compra']
                                 ) ?>
+                            </td>
+
+                            <td>
+                                <a class="table-action" href="<?= $escape($baseUrl) ?>/facturas/entrada/<?= (int)$ticket['id'] ?>">
+                                    Ver factura y QR
+                                </a>
                             </td>
                         </tr>
                     <?php endforeach; ?>

@@ -385,20 +385,20 @@ final class AdminController extends Controller
     }
 
     private function upload(string $field, string $kind): ?string
-{
-    if (!isset($_FILES[$field])) {
-        return null;
-    }
+    {
+        if (!isset($_FILES[$field])) {
+            return null;
+        }
 
-    $file = $_FILES[$field];
-    $error = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
+        $file = $_FILES[$field];
+        $error = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
 
-    if ($error === UPLOAD_ERR_NO_FILE) {
-        return null;
-    }
+        if ($error === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
 
-    if ($error !== UPLOAD_ERR_OK) {
-        $messages = [
+        if ($error !== UPLOAD_ERR_OK) {
+            $messages = [
             UPLOAD_ERR_INI_SIZE =>
                 'El archivo supera el tamaño permitido por PHP.',
             UPLOAD_ERR_FORM_SIZE =>
@@ -411,91 +411,91 @@ final class AdminController extends Controller
                 'PHP no pudo escribir el archivo en el servidor.',
             UPLOAD_ERR_EXTENSION =>
                 'Una extensión de PHP detuvo la carga.',
-        ];
+            ];
 
-        throw new \RuntimeException(
-            $messages[$error]
-            ?? 'Ocurrió un error al cargar el archivo.'
+            throw new \RuntimeException(
+                $messages[$error]
+                ?? 'Ocurrió un error al cargar el archivo.'
+            );
+        }
+
+        $originalName = (string)($file['name'] ?? '');
+        $temporaryPath = (string)($file['tmp_name'] ?? '');
+
+        if (
+            $originalName === ''
+            || $temporaryPath === ''
+            || !is_uploaded_file($temporaryPath)
+        ) {
+            throw new \RuntimeException(
+                'El archivo cargado no es válido.'
+            );
+        }
+
+        $extension = strtolower(
+            pathinfo($originalName, PATHINFO_EXTENSION)
         );
+
+        $allowedExtensions = match ($kind) {
+            'image' => ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+            'audio' => ['mp3', 'wav', 'ogg', 'm4a'],
+            default => [],
+        };
+
+        if (!in_array($extension, $allowedExtensions, true)) {
+            throw new \RuntimeException(
+                'Formato no permitido. Formatos admitidos: '
+                . implode(', ', $allowedExtensions)
+            );
+        }
+
+        $maxSize = $kind === 'audio'
+            ? 25 * 1024 * 1024
+            : 8 * 1024 * 1024;
+
+        if ((int)$file['size'] > $maxSize) {
+            throw new \RuntimeException(
+                $kind === 'audio'
+                    ? 'El audio no puede superar los 25 MB.'
+                    : 'La imagen no puede superar los 8 MB.'
+            );
+        }
+
+        $uploadDirectory = dirname(__DIR__, 2)
+            . '/public/uploads/'
+            . $kind;
+
+        if (
+            !is_dir($uploadDirectory)
+            && !mkdir($uploadDirectory, 0775, true)
+            && !is_dir($uploadDirectory)
+        ) {
+            throw new \RuntimeException(
+                'No fue posible crear la carpeta de archivos.'
+            );
+        }
+
+        $fileName = bin2hex(random_bytes(16))
+            . '.'
+            . $extension;
+
+        $destination = $uploadDirectory
+            . DIRECTORY_SEPARATOR
+            . $fileName;
+
+        if (!move_uploaded_file($temporaryPath, $destination)) {
+            throw new \RuntimeException(
+                'No fue posible guardar el archivo en el servidor.'
+            );
+        }
+
+        $config = require dirname(__DIR__)
+            . '/Config/config.php';
+
+        return rtrim($config['base_url'], '/')
+            . '/uploads/'
+            . $kind
+            . '/'
+            . $fileName;
     }
-
-    $originalName = (string)($file['name'] ?? '');
-    $temporaryPath = (string)($file['tmp_name'] ?? '');
-
-    if (
-        $originalName === ''
-        || $temporaryPath === ''
-        || !is_uploaded_file($temporaryPath)
-    ) {
-        throw new \RuntimeException(
-            'El archivo cargado no es válido.'
-        );
-    }
-
-    $extension = strtolower(
-        pathinfo($originalName, PATHINFO_EXTENSION)
-    );
-
-    $allowedExtensions = match ($kind) {
-        'image' => ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-        'audio' => ['mp3', 'wav', 'ogg', 'm4a'],
-        default => [],
-    };
-
-    if (!in_array($extension, $allowedExtensions, true)) {
-        throw new \RuntimeException(
-            'Formato no permitido. Formatos admitidos: '
-            . implode(', ', $allowedExtensions)
-        );
-    }
-
-    $maxSize = $kind === 'audio'
-        ? 25 * 1024 * 1024
-        : 8 * 1024 * 1024;
-
-    if ((int)$file['size'] > $maxSize) {
-        throw new \RuntimeException(
-            $kind === 'audio'
-                ? 'El audio no puede superar los 25 MB.'
-                : 'La imagen no puede superar los 8 MB.'
-        );
-    }
-
-    $uploadDirectory = dirname(__DIR__, 2)
-        . '/public/uploads/'
-        . $kind;
-
-    if (
-        !is_dir($uploadDirectory)
-        && !mkdir($uploadDirectory, 0775, true)
-        && !is_dir($uploadDirectory)
-    ) {
-        throw new \RuntimeException(
-            'No fue posible crear la carpeta de archivos.'
-        );
-    }
-
-    $fileName = bin2hex(random_bytes(16))
-        . '.'
-        . $extension;
-
-    $destination = $uploadDirectory
-        . DIRECTORY_SEPARATOR
-        . $fileName;
-
-    if (!move_uploaded_file($temporaryPath, $destination)) {
-        throw new \RuntimeException(
-            'No fue posible guardar el archivo en el servidor.'
-        );
-    }
-
-    $config = require dirname(__DIR__)
-        . '/Config/config.php';
-
-    return rtrim($config['base_url'], '/')
-        . '/uploads/'
-        . $kind
-        . '/'
-        . $fileName;
-}
 }

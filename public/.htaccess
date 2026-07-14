@@ -1,5 +1,10 @@
 RewriteEngine On
 RewriteBase /RokolaRitmoPTY/public/
+
+# Los audios admitidos por la aplicación pueden pesar hasta 25 MB.
+php_value upload_max_filesize 25M
+php_value post_max_size 27M
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [QSA,L]
