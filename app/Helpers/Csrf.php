@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Helpers;
 
+use App\Core\HttpException;
+
 final class Csrf
 {
     public static function token(): string
@@ -49,8 +51,7 @@ final class Csrf
         $token = $_POST['csrf_token'] ?? null;
 
         if (!self::validate(is_string($token) ? $token : null)) {
-            http_response_code(419);
-            exit('Token CSRF inválido o expirado.');
+            throw new HttpException(419, 'El formulario expiro. Recargue la pagina e intentelo nuevamente.');
         }
     }
 }

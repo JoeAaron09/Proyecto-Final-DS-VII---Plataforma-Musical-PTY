@@ -12,4 +12,6 @@ return [
     ],
     'free_monthly_limit' => 20,
     'upload_dir' => __DIR__ . '/public/uploads',
+    'debug' => false,
+    'log_file' => __DIR__ . '/storage/logs/app.log',
 ];

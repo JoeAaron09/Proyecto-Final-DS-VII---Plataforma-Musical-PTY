@@ -1,5 +1,6 @@
 <?php
 namespace App\Helpers;
+use App\Core\HttpException;
 final class Auth { 
     public static function user():?array{
         return $_SESSION['user']??null;
@@ -19,8 +20,7 @@ final class Auth {
     }
      public static function requireAdmin(bool $allowOperator=true):void{self::requireLogin();
      $ok=self::role()==='Administrador'||($allowOperator&&self::role()==='Operador');
-     if(!$ok){http_response_code(403);
-     exit('Acceso denegado');
+     if(!$ok){throw new HttpException(403, 'Acceso denegado.');
      }
     }
       public static function go(string $path):never{$c=require dirname(__DIR__,2).'/config.php';header('Location: '.$c['base_url'].$path);

@@ -6,9 +6,11 @@ namespace App\Controllers;
 
 use App\Config\Database;
 use App\Core\Controller;
+use App\Core\HttpException;
 use App\Helpers\Auth;
 use App\Helpers\Csrf;
 use App\Helpers\Flash;
+use App\Helpers\Input;
 use RuntimeException;
 use Throwable;
 
@@ -55,12 +57,12 @@ final class EventController extends Controller
         $hasAssignedSeats = $this->hasAssignedSeats(
             (string)($event['local_tipo'] ?? '')
         );
-        $paymentMethod = (string)($_POST['metodo_pago'] ?? '');
         $validMethods = ['yappy', 'tarjeta', 'transferencia'];
-
-        if (!in_array($paymentMethod, $validMethods, true)) {
-            throw new RuntimeException('Seleccione un método de pago válido.');
-        }
+        $paymentMethod = Input::choice(
+            $_POST['metodo_pago'] ?? '',
+            $validMethods,
+            'metodo de pago'
+        );
 
         $seats = [];
         if ($hasAssignedSeats) {
@@ -81,7 +83,7 @@ final class EventController extends Controller
             }
             $quantity = count($seats);
         } else {
-            $quantity = max(1, min(10, (int)($_POST['cantidad'] ?? 1)));
+            $quantity = Input::integer($_POST['cantidad'] ?? 1, 'cantidad', 1, 10);
         }
 
         $unitPrice = (float)$event['precio'];
@@ -234,8 +236,7 @@ final class EventController extends Controller
     private function requireCustomer(): void
     {
         if (in_array(Auth::role(), ['Administrador', 'Operador'], true)) {
-            http_response_code(403);
-            exit('El personal del sistema no realiza compras de entradas.');
+            throw new HttpException(403, 'El personal del sistema no realiza compras de entradas.');
         }
     }
 }

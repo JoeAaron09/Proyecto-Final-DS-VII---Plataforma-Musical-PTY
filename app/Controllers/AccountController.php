@@ -6,9 +6,11 @@ namespace App\Controllers;
 
 use App\Config\Database;
 use App\Core\Controller;
+use App\Core\HttpException;
 use App\Helpers\Auth;
 use App\Helpers\Csrf;
 use App\Helpers\Flash;
+use App\Helpers\Input;
 use PDO;
 use RuntimeException;
 use Throwable;
@@ -235,15 +237,14 @@ final class AccountController extends Controller
         Auth::requireLogin();
         Csrf::verify();
 
-        $name = trim((string)($_POST['nombre'] ?? ''));
-        $description = trim((string)($_POST['descripcion'] ?? ''));
-
-        if ($name === '') {
+        try {
+            $name = Input::text($_POST['nombre'] ?? '', 'nombre', 100);
+            $description = Input::text($_POST['descripcion'] ?? '', 'descripcion', 1000, false);
+        } catch (RuntimeException $exception) {
             Flash::set(
                 'error',
-                'Debe escribir un nombre para la lista.'
+                $exception->getMessage()
             );
-
             Auth::go('/mi-cuenta');
         }
 
@@ -258,7 +259,7 @@ final class AccountController extends Controller
         $statement->execute([
             Auth::id(),
             $name,
-            $description !== '' ? $description : null,
+            $description,
         ]);
 
         Flash::set(
@@ -274,13 +275,13 @@ final class AccountController extends Controller
         Auth::requireLogin();
         Csrf::verify();
 
-        $listId = (int)($_POST['lista_id'] ?? 0);
-        $songId = (int)($_POST['cancion_id'] ?? 0);
-
-        if ($listId <= 0 || $songId <= 0) {
+        try {
+            $listId = Input::integer($_POST['lista_id'] ?? null, 'lista');
+            $songId = Input::integer($_POST['cancion_id'] ?? null, 'cancion');
+        } catch (RuntimeException $exception) {
             Flash::set(
                 'error',
-                'Seleccione una lista y una canción válidas.'
+                $exception->getMessage()
             );
 
             Auth::go('/mi-cuenta');
@@ -345,19 +346,12 @@ final class AccountController extends Controller
     {
         Auth::requireLogin();
         if (in_array(Auth::role(), ['Administrador', 'Operador'], true)) {
-            http_response_code(403);
-            exit('El personal del sistema ya cuenta con acceso Premium.');
+            throw new HttpException(403, 'El personal del sistema ya cuenta con acceso Premium.');
         }
         Csrf::verify();
 
-        $paymentMethod = (string)($_POST['metodo_pago'] ?? '');
         $validPaymentMethods = ['yappy', 'tarjeta', 'transferencia'];
-
-        if (!in_array($paymentMethod, $validPaymentMethods, true)) {
-            throw new RuntimeException(
-                'Seleccione un método de pago válido.'
-            );
-        }
+        $paymentMethod = Input::choice($_POST['metodo_pago'] ?? '', $validPaymentMethods, 'metodo de pago');
 
         $db = Database::connection();
 

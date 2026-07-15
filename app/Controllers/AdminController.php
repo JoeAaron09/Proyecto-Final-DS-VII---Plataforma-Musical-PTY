@@ -8,6 +8,7 @@ use App\Core\Controller;
 use App\Helpers\Auth;
 use App\Helpers\Csrf;
 use App\Helpers\Flash;
+use App\Helpers\Input;
 use App\Models\Repository;
 use RuntimeException;
 
@@ -208,7 +209,19 @@ final class AdminController extends Controller
 
         foreach ($meta[$module]['fields'] as $field => $type) {
             if (str_starts_with($type, 'file:')) {
-                $oldValue = $_POST['old_' . $field] ?? null;
+                $oldValue = Input::text(
+                    $_POST['old_' . $field] ?? '',
+                    $field,
+                    500,
+                    false
+                );
+
+                if ($oldValue !== null && !preg_match(
+                    '#^/[a-zA-Z0-9/_-]+\.(?:jpe?g|png|webp|gif|mp3|wav|ogg|m4a)$#',
+                    $oldValue
+                )) {
+                    throw new RuntimeException('La referencia del archivo existente no es valida.');
+                }
 
                 $data[$field] = $this->upload(
                     $field,
@@ -218,17 +231,43 @@ final class AdminController extends Controller
                 continue;
             }
 
-            $value = trim(
-                (string)($_POST[$field] ?? '')
-            );
+            $required = $field === 'nombre';
+            $raw = $_POST[$field] ?? '';
 
-            $data[$field] = $value === ''
-                ? null
-                : $value;
+            if ($type === 'email') {
+                $data[$field] = $raw === '' ? null : Input::email($raw, $field);
+            } elseif ($type === 'date') {
+                $data[$field] = Input::date($raw, $field);
+            } elseif ($type === 'time') {
+                $data[$field] = Input::time($raw, $field);
+            } elseif ($type === 'number') {
+                $data[$field] = $raw === '' ? null : (
+                    in_array($field, ['precio'], true)
+                        ? Input::decimal($raw, $field)
+                        : Input::integer($raw, $field, 0)
+                );
+            } elseif (str_starts_with($type, 'select_static:')) {
+                $data[$field] = Input::choice(
+                    $raw,
+                    explode('|', substr($type, 14)),
+                    $field
+                );
+            } elseif (str_starts_with($type, 'select:')) {
+                $data[$field] = $raw === ''
+                    ? null
+                    : Input::integer($raw, $field);
+            } else {
+                $data[$field] = Input::text(
+                    $raw,
+                    $field,
+                    $type === 'textarea' ? 5000 : 255,
+                    $required
+                );
+            }
         }
 
         $id = isset($_POST['id']) && $_POST['id'] !== ''
-            ? (int)$_POST['id']
+            ? Input::integer($_POST['id'], 'id')
             : null;
 
         if ($module === 'canciones') {
@@ -315,28 +354,26 @@ final class AdminController extends Controller
         Auth::requireAdmin(false);
         Csrf::verify();
 
-        $id = (int)($_POST['id'] ?? 0);
+        $id = ($_POST['id'] ?? '') === ''
+            ? 0
+            : Input::integer($_POST['id'], 'id');
 
         $data = [
-            'rol_id' => (int)($_POST['rol_id'] ?? 0),
-            'nombre' => trim(
-                (string)($_POST['nombre'] ?? '')
+            'rol_id' => Input::integer($_POST['rol_id'] ?? null, 'rol'),
+            'nombre' => Input::text($_POST['nombre'] ?? '', 'nombre', 100),
+            'correo' => Input::email($_POST['correo'] ?? ''),
+            'nacionalidad' => Input::text($_POST['nacionalidad'] ?? '', 'nacionalidad', 80),
+            'tipo_usuario' => Input::choice(
+                $_POST['tipo_usuario'] ?? 'gratuito',
+                ['gratuito', 'premium'],
+                'tipo de usuario'
             ),
-            'correo' => trim(
-                (string)($_POST['correo'] ?? '')
-            ),
-            'nacionalidad' => trim(
-                (string)($_POST['nacionalidad'] ?? '')
-            ),
-            'tipo_usuario' => trim(
-                (string)($_POST['tipo_usuario'] ?? 'gratuito')
-            ),
-            'estado' => (int)($_POST['estado'] ?? 1),
+            'estado' => Input::integer($_POST['estado'] ?? 1, 'estado', 0, 1),
         ];
 
         if (!empty($_POST['password'])) {
             $data['password'] = password_hash(
-                (string)$_POST['password'],
+                Input::password($_POST['password']),
                 PASSWORD_DEFAULT
             );
         }
@@ -447,6 +484,16 @@ final class AdminController extends Controller
                 'Formato no permitido. Formatos admitidos: '
                 . implode(', ', $allowedExtensions)
             );
+        }
+
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($temporaryPath);
+        $allowedMimes = match ($kind) {
+            'image' => ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+            'audio' => ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/mp4', 'video/mp4'],
+            default => [],
+        };
+        if (!is_string($mime) || !in_array($mime, $allowedMimes, true)) {
+            throw new RuntimeException('El contenido del archivo no coincide con un formato permitido.');
         }
 
         $maxSize = $kind === 'audio'
